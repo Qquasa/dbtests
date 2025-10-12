@@ -9,7 +9,7 @@ def get_123_sync():
         print(f'{res.first()=}')
 
 async def get_123_async():
-    async with sync_engien.connect() as conn:
+    async with sync_engine.connect() as conn:
         res = await conn.execute(text("SELECT VERSION()"))
         print(f'{res.first()=}')
 
