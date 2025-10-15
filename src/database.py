@@ -19,7 +19,7 @@ async_engine = create_async_engine(
     max_overflow=10, #standart
 )
 
-sesison_factory = sessionmaker(sync_engine)
+session_factory = sessionmaker(sync_engine)
 async_session_factory = async_sessionmaker(async_engine)
 
 
