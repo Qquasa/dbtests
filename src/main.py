@@ -23,6 +23,8 @@ async def main():
         SyncORM.update_worker()
         SyncORM.insert_resume()
         SyncORM.select_resume_avg_compensation()
+        # SyncORM.select_workers_with_joined_relationship()
+        SyncORM.select_workers_with_selectinload_relationship()
 
 if __name__ == "__main__":
     asyncio.run(main())

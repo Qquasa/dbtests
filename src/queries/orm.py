@@ -1,5 +1,5 @@
 from sqlalchemy import text, insert, select, update, delete, func, cast, Integer, and_
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, joinedload, selectinload
 from database import sync_engine, async_engine, session_factory, Base
 from models import metadata_obj, WorkerORM, ResumeORM, Workload
 
@@ -152,3 +152,43 @@ class SyncORM:
             res = session.execute(query)
             result = res.all()
             print(f"{len(result)=}. {result=}")
+
+    @staticmethod
+    def select_workers_with_lazy_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerORM)
+            )
+            res = session.execute(query)
+            result = res.scalars().all()
+
+            result[0].resume
+
+    # one to one, many to one   -   joinedload       
+    @staticmethod
+    def select_workers_with_joined_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerORM)
+                .options(joinedload(WorkerORM.resume))
+            )
+
+            res = session.execute(query)
+            result = res.unique().scalars().all() #.unique() -required
+
+            result[0].resume
+            
+    # one to many, many to many    -    selctionload
+    @staticmethod
+    def select_workers_with_selectinload_relationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerORM)
+                .options(selectinload(WorkerORM.resume))
+            )
+
+            res = session.execute(query)
+            result = res.unique().scalars().all() #.unique() -required
+
+            resume_1 = result[0].resume
+            print(resume_1)
