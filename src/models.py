@@ -1,6 +1,6 @@
 import datetime
 from typing import Annotated
-from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey, text
+from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey, text, CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base, str_256
 import enum
@@ -16,7 +16,15 @@ class WorkerORM(Base):
     id: Mapped[intpk]
     username: Mapped[str]
 
-    resume: Mapped[list["ResumeORM"]] = relationship()
+    resume: Mapped[list["ResumeORM"]] = relationship(
+        back_populates="worker",
+    )
+
+    resume_parttime: Mapped[list["ResumeORM"]] = relationship(
+        back_populates="worker",
+        primaryjoin="and_(WorkerORM.id == ResumeORM.worker_id, ResumeORM.workload == 'parttime')",
+        order_by="ResumeORM.id.desc()"
+    )
 
 class Workload(enum.Enum):
     parttime = "parttime"
@@ -33,8 +41,17 @@ class ResumeORM(Base):
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
-    worker: Mapped["WorkerORM"] = relationship()
-    
+    worker: Mapped["WorkerORM"] = relationship(
+        back_populates="resume"
+    )
+
+    repr_cols_num = 3
+    repr_cols = tuple("updated_at")
+
+    __table_args__=(
+        Index("title_index", "title"),
+        CheckConstraint("compensation > 0", name="checl_compensation_positive"),
+    )    
 
 
 

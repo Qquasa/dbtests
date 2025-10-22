@@ -1,5 +1,5 @@
 from sqlalchemy import text, insert, select, update, delete, func, cast, Integer, and_
-from sqlalchemy.orm import aliased, joinedload, selectinload
+from sqlalchemy.orm import aliased, joinedload, selectinload, contains_eager
 from database import sync_engine, async_engine, session_factory, Base
 from models import metadata_obj, WorkerORM, ResumeORM, Workload
 
@@ -164,9 +164,9 @@ class SyncORM:
 
             result[0].resume
 
-    # one to one, many to one   -   joinedload       
     @staticmethod
     def select_workers_with_joined_relationship():
+            # one to one, many to one   -   joinedload   
         with session_factory() as session:
             query = (
                 select(WorkerORM)
@@ -178,9 +178,9 @@ class SyncORM:
 
             result[0].resume
             
-    # one to many, many to many    -    selctionload
     @staticmethod
     def select_workers_with_selectinload_relationship():
+            # one to many, many to many    -    selctionload
         with session_factory() as session:
             query = (
                 select(WorkerORM)
@@ -192,3 +192,50 @@ class SyncORM:
 
             resume_1 = result[0].resume
             print(resume_1)
+
+    @staticmethod
+    def select_workers_with_condition_releationship():
+        with session_factory() as session:
+            query = (
+                select(WorkerORM)
+                .options(selectinload(WorkerORM.resume_parttime))
+            )
+            res = session.execute(query)
+            result = res.scalars().all()
+
+            print(result)
+
+    @staticmethod
+    def select_workers_with_condition_releationship_contains_eager():
+        with session_factory() as session:
+            query = (
+                select(WorkerORM)
+                .join(WorkerORM.resume)
+                .options(contains_eager(WorkerORM.resume))
+                .filter(ResumeORM.workload == 'fultime')
+            )
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+
+    @staticmethod
+    def select_workers_with_relationship_contains_eager_with_limit():
+        # https://stackoverflow.com/a/72298903/22259413 
+        with session_factory() as session:
+            subq = (
+                select(ResumeORM.id.label("parttime_resume_id"))
+                .filter(ResumeORM.worker_id == WorkerORM.id)
+                .order_by(WorkerORM.id.desc())
+                .limit(1)
+                .scalar_subquery()
+                .correlate(WorkerORM)
+            )
+
+            query = (
+                select(WorkerORM)
+                .join(ResumeORM, ResumeORM.id.in_(subq))
+                .options(contains_eager(WorkerORM.resume))
+            )
+
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(result)
